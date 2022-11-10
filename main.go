@@ -18,6 +18,7 @@ func main() {
 			AuthURL:  "http://localhost:9096/authorize",
 			TokenURL: "http://localhost:9096/token",
 		},
+		RedirectURL: "http://localhost:9095",
 	}
 
 	// Redirect user to consent page to ask for permission
