@@ -55,6 +55,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%+v\n", tok)
+	fmt.Println(tok.AccessToken, tok.RefreshToken, tok.Expiry)
 
 }
