@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/go-oauth2/oauth2/v4/generates"
+	"github.com/golang-jwt/jwt"
 	"log"
 	"net/http"
 	"strings"
@@ -24,12 +27,24 @@ func main() {
 	clientStore.Set("000000", &models.Client{
 		ID:     "000000",
 		Secret: "999999",
-		Domain: "http://localhost:9095/callback",
+		Domain: "http://localhost:3000/callback",
+		UserID: "loresuso",
 	})
 	manager.MapClientStorage(clientStore)
 
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte("00000000"), jwt.SigningMethodHS512))
+
+	// config used for client credentials
+	cfg := &manage.Config{
+		AccessTokenExp:    5 * time.Second,
+		RefreshTokenExp:   0,
+		IsGenerateRefresh: false,
+	}
+	manager.SetClientTokenCfg(cfg)
+
+	// useful to test other grant types
 	refreshTokenConfig := &manage.RefreshingConfig{
-		AccessTokenExp:     time.Minute,
+		AccessTokenExp:     time.Second * 3,
 		RefreshTokenExp:    time.Hour * 24,
 		IsGenerateRefresh:  true,
 		IsResetRefreshTime: false,
@@ -57,6 +72,13 @@ func main() {
 		return "id", nil
 	})
 
+	srv.SetPasswordAuthorizationHandler(func(ctx context.Context, clientID, username, password string) (userID string, err error) {
+		if clientID == "000000" && username == "loresuso" && password == "loresuso" {
+			return "loresuso", nil
+		}
+		return "", errors.ErrAccessDenied
+	})
+
 	http.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(formatRequest(r))
 		err := srv.HandleAuthorizeRequest(w, r)
@@ -68,6 +90,11 @@ func main() {
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(formatRequest(r))
 		srv.HandleTokenRequest(w, r)
+	})
+
+	http.HandleFunc("/hitme", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(formatRequest(r))
+		w.Write([]byte("ok hit"))
 	})
 
 	log.Fatal(http.ListenAndServe(":9096", nil))

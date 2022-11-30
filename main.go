@@ -3,13 +3,42 @@ package main
 import (
 	"context"
 	"fmt"
-	"golang.org/x/oauth2"
-	"log"
+	"golang.org/x/oauth2/clientcredentials"
+	"io"
 	"net/http"
+	"time"
 )
 
 func main() {
 	ctx := context.Background()
+	conf := clientcredentials.Config{
+		ClientID:       "000000",
+		ClientSecret:   "999999",
+		TokenURL:       "http://localhost:9096/token",
+		Scopes:         nil,
+		EndpointParams: nil,
+		AuthStyle:      0,
+	}
+
+	tok, _ := conf.Token(ctx)
+	fmt.Println(tok.AccessToken, tok.Expiry)
+
+	client := conf.Client(ctx)
+
+	for {
+		request, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:9096/hitme", nil)
+		response, err := client.Do(request)
+		if err != nil {
+			fmt.Printf(err.Error())
+			return
+		}
+		body, _ := io.ReadAll(response.Body)
+		fmt.Println(string(body))
+		time.Sleep(3 * time.Second)
+	}
+}
+
+/*
 	conf := &oauth2.Config{
 		ClientID:     "000000",
 		ClientSecret: "999999",
@@ -56,5 +85,4 @@ func main() {
 	}
 
 	fmt.Println(tok.AccessToken, tok.RefreshToken, tok.Expiry)
-
-}
+*/
