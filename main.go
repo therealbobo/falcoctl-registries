@@ -6,6 +6,8 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 	"io"
 	"net/http"
+	"oauth/server"
+	"oras.land/oras-go/v2/registry/remote"
 	"time"
 )
 
@@ -23,19 +25,52 @@ func main() {
 	tok, _ := conf.Token(ctx)
 	fmt.Println(tok.AccessToken, tok.Expiry)
 
+	/*
+		// PoC to see renewing access token with client credentials
+		for {
+			request, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:9096/hitme", nil)
+			response, err := client.Do(request)
+			if err != nil {
+				fmt.Printf(err.Error())
+				return
+			}
+			body, _ := io.ReadAll(response.Body)
+			fmt.Println(string(body))
+			time.Sleep(3 * time.Second)
+		}
+	*/
+
+	// PoC to show tags request and renewing access token with client credentials
+	repo, err := remote.NewRepository("localhost:443/myrepo")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
 	client := conf.Client(ctx)
+	/*client.Transport = loggingRoundTripper{
+		next:   client.Transport,
+		logger: os.Stdout,
+	}*/
+	repo.Client = client
+	repo.PlainHTTP = true
 
 	for {
-		request, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:9096/hitme", nil)
-		response, err := client.Do(request)
-		if err != nil {
-			fmt.Printf(err.Error())
-			return
-		}
-		body, _ := io.ReadAll(response.Body)
-		fmt.Println(string(body))
+		repo.Tags(ctx, "", nil)
 		time.Sleep(3 * time.Second)
 	}
+}
+
+type loggingRoundTripper struct {
+	next   http.RoundTripper
+	logger io.Writer
+}
+
+// RoundTrip is a decorator on top of the default roundtripper
+func (l loggingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	// here we can log our message and info
+	fmt.Fprintf(l.logger, "%s", server.FormatRequest(r))
+	return l.next.RoundTrip(r)
 }
 
 /*
