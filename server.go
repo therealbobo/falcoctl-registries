@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"log"
 	"net/http"
-	server2 "oauth/server"
+	oauthserver "oauth/server"
 	"time"
 
 	"github.com/go-oauth2/oauth2/v4/errors"
@@ -18,6 +18,8 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	manager := manage.NewDefaultManager()
 	// token memory store
 	manager.MustTokenStorage(store.NewMemoryTokenStore())
@@ -80,7 +82,7 @@ func main() {
 	})
 
 	http.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(server2.FormatRequest(r))
+		fmt.Println(oauthserver.FormatRequest(r))
 		err := srv.HandleAuthorizeRequest(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -88,13 +90,30 @@ func main() {
 	})
 
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(server2.FormatRequest(r))
+		fmt.Println(oauthserver.FormatRequest(r))
 		srv.HandleTokenRequest(w, r)
 	})
 
 	http.HandleFunc("/hitme", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(server2.FormatRequest(r))
+		fmt.Println(oauthserver.FormatRequest(r))
 		w.Write([]byte("ok hit"))
+	})
+
+	// Token introspection endpoint
+	http.HandleFunc("/introspect", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		accessToken := r.FormValue("token")
+		ti, err := srv.Manager.LoadAccessToken(ctx, accessToken)
+
+		if duration := ti.GetAccessExpiresIn(); duration <= 0 {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 	})
 
 	log.Fatal(http.ListenAndServe(":9096", nil))
