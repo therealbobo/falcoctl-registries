@@ -2,10 +2,18 @@
 
 This little project is the home of a test OAuth2.0 server for `falcoctl` and `oras-go`.
 
+<img src="oauth-flow.png"/>
 
 ## PoC
 
-First of all, start the OAuth2.0 server
+First of all, build the container in the nginx folder and start it
+
+```shell
+$ cd nginx && docker build -t loresuso/oauth-proxy .
+$ docker run --rm -it --net=host loresuso/oauth-proxy
+```
+
+Then, start the OAuth2.0 server
 ```shell
 $ go run server.go
 ```
@@ -18,26 +26,19 @@ Take this in mind if you want later use `falcoctl`:
 $ falcoctl registry oauth  --client-id=000000 --client-secret=999999  --token-url="http://localhost:9096/token" --scopes="my-scope"
 ```
 
-Then, start a fake http server, mimicking the tags endpoint for an OCI registry:
+The above command save client credentials in the filesystem, so that can be used later on.
+
+Then, start an OCI registry
 
 ```shell
-$ go run fake-registry.go
+$ docker run -it --rm -p 5000:5000 --name registry registry:2
 ```
 
-Lastly, start the client
+Lastly, run falcoctl (remember to use oauth and plain http for testing)
 
 ```shell
-$ go run main.go
+$ falcoctl registry push ...
 ```
 
-Steps performed by the client and explanation of the output:
-
-1. client will try to authenticate to OCI registry via OAuth2.0 registry
-   - this is done by issuing a POST request at the token endpoint.
-   - if clientID and client secret are registered in the OAuth server, an access token with expiration will be sent back
-2. client tries to list down tags of a given repository
-   - before sending the real request (`GET /v2/myrepo/tags/list`), it checks if the access token is valid (not expired)
-   - if valid, request is sent directly 
-   - if not, a new request to token endpoint to get a new access token using the long lived credentials (client ID and client secret), as it was done at the beginning
 
 
