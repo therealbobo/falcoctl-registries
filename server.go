@@ -3,19 +3,22 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/go-oauth2/oauth2/v4/generates"
-	"github.com/golang-jwt/jwt"
 	"log"
 	"net/http"
 	oauthserver "oauth/server"
+	"strings"
 	"time"
 
 	"github.com/go-oauth2/oauth2/v4/errors"
+	"github.com/go-oauth2/oauth2/v4/generates"
 	"github.com/go-oauth2/oauth2/v4/manage"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
+	"github.com/golang-jwt/jwt"
 )
+
+const jwtKey = "00000000"
 
 func main() {
 	ctx := context.Background()
@@ -34,11 +37,11 @@ func main() {
 	})
 	manager.MapClientStorage(clientStore)
 
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte("00000000"), jwt.SigningMethodHS512))
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte(jwtKey), jwt.SigningMethodHS512))
 
 	// config used for client credentials
 	cfg := &manage.Config{
-		AccessTokenExp:    5 * time.Second,
+		AccessTokenExp:    60 * time.Second,
 		RefreshTokenExp:   0,
 		IsGenerateRefresh: false,
 	}
@@ -108,7 +111,12 @@ func main() {
 		}
 
 		accessToken := r.FormValue("token")
+		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
 		ti, err := srv.Manager.LoadAccessToken(ctx, accessToken)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 
 		if duration := ti.GetAccessExpiresIn(); duration <= 0 {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
