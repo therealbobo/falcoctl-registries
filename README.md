@@ -47,7 +47,12 @@ $ falcoctl registry push ...
 
 PoC v1's main drawback is that every request made to the proxy corresponds to another request done against the OAuth server for token introspection. To avoid this, we can make use of signed JWTs. Signed JWTs allows the proxy to verify that authenticity and the integrity of a JWT token. For the sake of simplicity, this PoC uses HMAC as signing algorithm, and verification happens by using a shared common secret between proxy and Oauth server. Any other (and more robust) algorithm can be used for production use cases. 
 
-First of all, let `falcoctl` store client credentials, so that it can be able to make authenticated requests later:
+First of all, let's launch also the OAuth server:
+```shell
+$ go run server.go
+```
+
+Then, let `falcoctl` store client credentials, so that it can be able to make authenticated requests later:
 
 ```shell
 $ ./falcoctl registry oauth --client-id=000000 --client-secret=999999 --token-url "http://localhost:9096/token"
@@ -66,11 +71,6 @@ Then, start also a container registry:
 $ docker run --rm -it --name=registry -p 5000:5000 registry
 ```
 Keep it in another terminal so that you can see what kind of operations are performed on it, for debugging purposes. 
-
-Let's launch also the OAuth server:
-```shell
-$ go run server.go
-```
 
 The last piece needed is a reverse proxy server written in Go, that can perform token validation and rate limiting:
 ```shell
