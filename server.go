@@ -37,7 +37,7 @@ func main() {
 	})
 	manager.MapClientStorage(clientStore)
 
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte(jwtKey), jwt.SigningMethodHS512))
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", []byte("my-secret"), jwt.SigningMethodHS256))
 
 	// config used for client credentials
 	cfg := &manage.Config{

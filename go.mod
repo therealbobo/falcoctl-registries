@@ -3,6 +3,7 @@ module oauth
 go 1.19
 
 require (
+	github.com/elazarl/goproxy v0.0.0-20221015165544-a0805db90819 // indirect
 	github.com/go-oauth2/oauth2/v4 v4.5.1 // indirect
 	github.com/go-session/session v3.1.2+incompatible // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
