@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	oauthserver "oauth/server"
 	"strings"
 	"time"
 
@@ -85,7 +84,7 @@ func main() {
 	})
 
 	http.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(oauthserver.FormatRequest(r))
+		fmt.Println(FormatRequest(r))
 		err := srv.HandleAuthorizeRequest(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -93,12 +92,12 @@ func main() {
 	})
 
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(oauthserver.FormatRequest(r))
+		fmt.Println(FormatRequest(r))
 		srv.HandleTokenRequest(w, r)
 	})
 
 	http.HandleFunc("/hitme", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(oauthserver.FormatRequest(r))
+		fmt.Println(FormatRequest(r))
 		w.Write([]byte("ok hit"))
 	})
 
@@ -125,4 +124,33 @@ func main() {
 	})
 
 	log.Fatal(http.ListenAndServe(":9096", nil))
+}
+
+// formatRequest generates ascii representation of a request
+func FormatRequest(r *http.Request) string {
+	// Create return string
+	var request []string
+	// Add the request string
+	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
+	request = append(request, url)
+	// Add the host
+	request = append(request, fmt.Sprintf("Host: %v", r.Host))
+	// Loop through headers
+	for name, headers := range r.Header {
+		name = strings.ToLower(name)
+		for _, h := range headers {
+			request = append(request, fmt.Sprintf("%v: %v", name, h))
+		}
+	}
+
+	// If this is a POST, add post data
+	if r.Method == "POST" {
+		r.ParseForm()
+		request = append(request, "\n")
+		request = append(request, r.Form.Encode())
+	}
+
+	request = append(request, "---------------------------------")
+	// Return the request as a string
+	return strings.Join(request, "\n")
 }

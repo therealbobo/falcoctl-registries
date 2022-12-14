@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+
+  registry:
+    image: registry
+    ports:
+      - 5000:5000
+
+  proxy: 
+    image: loresuso/go-proxy
+    depends_on:
+      - redis
+    build:
+      context: .
+      dockerfile: Dockerfile-oauth-proxy
+    network_mode: "host"
+
+  oauth:
+    image: loresuso/go-oauth
+    build:
+      context: .
+      dockerfile: Dockerfile-oauth-server
+    ports:
+      - 9096:9096
