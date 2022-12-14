@@ -43,6 +43,8 @@ $ falcoctl registry push ...
 
 ## PoC v2 
 
+<img src="oauth-flow-jwt.png"/>
+
 PoC v1's main drawback is that every request made to the proxy corresponds to another request done against the OAuth server for token introspection. To avoid this, we can make use of signed JWTs. Signed JWTs allows the proxy to verify that authenticity and the integrity of a JWT token. For the sake of simplicity, this PoC uses HMAC as signing algorithm, and verification happens by using a shared common secret between proxy and Oauth server. Any other (and more robust) algorithm can be used for production use cases. 
 
 First of all, let `falcoctl` store client credentials, so that it can be able to make authenticated requests later:
@@ -60,7 +62,6 @@ This is used to implement a very simple rate limiting algorithm by making use of
 Keys are composed by `clientID | currentMinute`. We keep increasing a counter everytime a client hit our proxy with a request in a given minute. If the counter goes beyond a threshold, we do not pass the request to the registry. We also set the `EXPIRE` everytime this key is hit, and this is set to 59 seconds. This way, when we will roll from minute 59 to 00, we are sure that the key for that minute was expired and we can start increasing the counter for the first minute of the new hour.
 
 Then, start also a container registry:
-Then, start a Redis server:
 ```shell
 $ docker run --rm -it --name=registry -p 5000:5000 registry
 ```

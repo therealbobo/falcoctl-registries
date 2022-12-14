@@ -42,7 +42,7 @@ func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter,
 		token := r.Header.Get("Authorization")
 		token = strings.TrimPrefix(token, "Bearer ")
 		if err := validateToken(token); err != nil {
-			log.Fatal("validation error: %w", err)
+			log.Fatal("validation error: %s", err.Error())
 			return
 		}
 
