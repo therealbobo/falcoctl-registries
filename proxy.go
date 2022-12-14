@@ -42,11 +42,10 @@ func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter,
 		token := r.Header.Get("Authorization")
 		token = strings.TrimPrefix(token, "Bearer ")
 		if err := validateToken(token); err != nil {
-			log.Fatal("validation error: %s", err.Error())
-			return
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		} else {
+			proxy.ServeHTTP(w, r)
 		}
-
-		proxy.ServeHTTP(w, r)
 	}
 }
 
