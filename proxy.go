@@ -1,20 +1,29 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/golang-jwt/jwt"
 )
 
-var HmacSampleSecret = []byte("secret")
+var (
+	HmacSampleSecret = []byte("secret")
+	rdb              *redis.Client
+)
 
 const (
-	registry = "http://localhost:5000"
+	registry        = "http://localhost:5000"
+	maxRequests int = 15
+	expiryTime      = 10 * time.Second
 )
 
 // NewProxy takes target host and creates a reverse proxy
@@ -74,6 +83,29 @@ func validateToken(tokenString string) error {
 		return fmt.Errorf("cannot extract expire field")
 	}
 
+	// TODO: check expiry time
+
+	// Rate limiting
+	_, minute, _ := time.Now().Clock()
+	key := clientID.(string) + strconv.FormatInt(int64(minute), 10)
+	count, err := rdb.Get(context.Background(), key).Result()
+	i, _ := strconv.Atoi(count)
+	if err == redis.Nil || i < maxRequests {
+		pipe := rdb.Pipeline()
+
+		pipe.Incr(context.Background(), key)
+		pipe.Expire(context.Background(), key, 59*time.Second)
+
+		_, err := pipe.Exec(context.Background())
+		if err != nil {
+			panic(err)
+		}
+	} else if err != nil {
+		return err
+	} else {
+		return fmt.Errorf("rate limit exceeded")
+	}
+
 	fmt.Println(clientID, expire)
 
 	return nil
@@ -84,6 +116,18 @@ func main() {
 	proxy, err := NewProxy(registry)
 	if err != nil {
 		panic(err)
+	}
+
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	_, err = rdb.Ping(context.Background()).Result()
+	if err != nil {
+		log.Fatalln("cannot connect to Redis for ratelimiting requests")
+		return
 	}
 
 	// handle all requests to your server using the proxy
