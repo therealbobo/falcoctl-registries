@@ -45,7 +45,24 @@ $ falcoctl registry push ...
 
 <img src="oauth-flow-jwt.png"/>
 
+### TL;DR: There's a docker compose!
+
+Just issue:
+```shell
+$ docker-compose up
+```
+to run OAuth server, registry, Redis, and proxy. 
+Then, try out 
+```shell 
+$ ./falcoctl registry oauth --client-id=000000 --client-secret=999999 --token-url "http://localhost:9096/token"
+$ ./falcoctl registry push localhost:6000/test:7.0.0 --type plugin --platform linux/x86 /tmp/triage.scap --oauth --plain-http
+$ ./falcoctl registry pull localhost:6000/test:7.0.0 --oauth --plain-http --platform linux/x86
+```
+### Motivation
+
 PoC v1's main drawback is that every request made to the proxy corresponds to another request done against the OAuth server for token introspection. To avoid this, we can make use of signed JWTs. Signed JWTs allows the proxy to verify that authenticity and the integrity of a JWT token. For the sake of simplicity, this PoC uses HMAC as signing algorithm, and verification happens by using a shared common secret between proxy and Oauth server. Any other (and more robust) algorithm can be used for production use cases. 
+
+### Tutorial
 
 First of all, let's launch also the OAuth server:
 ```shell
