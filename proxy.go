@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,8 +17,9 @@ import (
 )
 
 var (
-	HmacSampleSecret = []byte("secret")
-	rdb              *redis.Client
+	HmacSampleSecret     = []byte("secret")
+	rdb                  *redis.Client
+	tooManyRequestsError = errors.New("too many requests")
 )
 
 const (
@@ -41,7 +43,10 @@ func ProxyRequestHandler(proxy *httputil.ReverseProxy) func(http.ResponseWriter,
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
 		token = strings.TrimPrefix(token, "Bearer ")
-		if err := validateToken(token); err != nil {
+		err := validateToken(token)
+		if errors.Is(err, tooManyRequestsError) {
+			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+		} else if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		} else {
 			proxy.ServeHTTP(w, r)
@@ -102,7 +107,7 @@ func validateToken(tokenString string) error {
 	} else if err != nil {
 		return err
 	} else {
-		return fmt.Errorf("rate limit exceeded")
+		return tooManyRequestsError
 	}
 
 	fmt.Println(clientID, expire)
