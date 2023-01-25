@@ -1,0 +1,9 @@
+- name: shells-rules
+  type: rulesfile
+  registry: 127.0.0.1:5001
+  repository: my-rules-basic
+  description: My rules
+  keywords:
+    - my-keyword-basic
+    - 
+  license: apache-2.0

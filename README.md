@@ -1,24 +1,40 @@
-# oauth
+# falcoctl registries
+
+*Notice: this is a WIP repository. Use with caution!*
 
 This little project is the home of a test OAuth2.0 server for `falcoctl` and `oras-go`.
+
 ## PoC
 
-<img src="oauth-flow-jwt.png"/>
+<!-- <img src="oauth-flow-jwt.png"/> -->
 
-### TL;DR: There's a docker compose!
+This repository will setup 2 registries:
 
-Just issue:
+- an *HTTP Basic Authentication* registry on port 5001 (default user and password are user:password)
+- an *OAuth* registry on port 5000 (default id and secret are 000000:999999)
+
+Plus a web server to server to serve indexes (stores in the `indexes` folder) on port 8000.
+
+### TL;DR
+
+You'll need:
+- `docker`
+- `docker-compose`
+- `mkcert`
+
+Then you only have to run:
 ```shell
-$ docker-compose up
+$ ./run.sh
 ```
-to run OAuth server, registry, Redis, and proxy. 
+
 Then, try out 
 ```shell 
-$ ./falcoctl registry oauth --client-id=000000 --client-secret=999999 --token-url "http://localhost:9096/token"
-$ ./falcoctl registry push localhost:6000/test:7.0.0 --type plugin --platform linux/x86 /tmp/triage.scap --oauth --plain-http
-$ ./falcoctl registry pull localhost:6000/test:7.0.0 --oauth --plain-http --platform linux/x86
+# falcoctl registry oauth --client-id=000000 --client-secret=999999 --token-url "http://localhost:9096/token"
+# falcoctl registry push localhost:6000/test:7.0.0 --type plugin --platform linux/x86 /tmp/triage.scap --oauth --plain-http
+# falcoctl registry pull localhost:6000/test:7.0.0 --oauth --plain-http --platform linux/x86
 ```
 
+<!--
 ### Complete flow explained
 
 Signed JWTs allows the proxy to verify authenticity and the integrity of a JWT token. For the sake of simplicity, this PoC uses HMAC as signing algorithm, and verification happens by using a shared common secret between proxy and Oauth server. Any other (and more robust) signing algorithm can be used for production use cases. 
@@ -60,3 +76,4 @@ $ ./falcoctl registry pull localhost:6000/test:7.0.0 --oauth --plain-http --plat
 ```
 
 Rate limit is set to 15 requests per minute.
+-->

@@ -1,0 +1,10 @@
+- list: system_shells
+  items: [bash, zsh, ksh, sh, csh, fish]
+
+
+- rule: Detect shells in a container
+  desc: You shouldn’t have a shell ran in a container
+  condition: proc.name in (system_shells)
+  output: Bash ran inside a container (user=%user.name command=%proc.cmdline)
+  priority: INFO
+

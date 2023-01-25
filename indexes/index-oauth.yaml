@@ -1,0 +1,9 @@
+- name: my-rules-oauth
+  type: rulesfile
+  registry: 127.0.0.1:5000
+  repository: my-rules-oauth
+  description: My rules
+  keywords:
+    - my-keyword-oauth
+    - 
+  license: apache-2.0
